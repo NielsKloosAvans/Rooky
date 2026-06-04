@@ -1,3 +1,5 @@
+use crate::PieceKind::Knight;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Color {
     White,
@@ -53,6 +55,117 @@ impl Board {
     pub fn remove_piece(&mut self, square: Square) -> Option<Piece> {
         let index = square.index();
         self.squares[index].take()
+    }
+
+    pub fn starting_position() -> Board {
+        let mut board = Board::empty();
+        let black_pawn = Piece {
+            color: Color::Black,
+            kind: PieceKind::Pawn,
+        };
+        let black_knight = Piece {
+            color: Color::Black,
+            kind: PieceKind::Knight,
+        };
+        let black_queen = Piece {
+            color: Color::Black,
+            kind: PieceKind::Queen,
+        };
+        let black_king = Piece {
+            color: Color::Black,
+            kind: PieceKind::King,
+        };
+        let black_rook = Piece {
+            color: Color::Black,
+            kind: PieceKind::Rook,
+        };
+        let white_pawn = Piece {
+            color: Color::White,
+            kind: PieceKind::Pawn,
+        };
+        let white_knight = Piece {
+            color: Color::White,
+            kind: PieceKind::Knight,
+        };
+        let white_queen = Piece {
+            color: Color::White,
+            kind: PieceKind::Queen,
+        };
+        let white_king = Piece {
+            color: Color::White,
+            kind: PieceKind::King,
+        };
+        let white_rook = Piece {
+            color: Color::White,
+            kind: PieceKind::Rook,
+        };
+        let a1 = Square::new(0, 0).unwrap();
+        let a2 = Square::new(0, 1).unwrap();
+        let b1 = Square::new(1, 0).unwrap();
+        let b2 = Square::new(1, 1).unwrap();
+        let c1 = Square::new(2, 0).unwrap();
+        let c2 = Square::new(2, 1).unwrap();
+        let d1 = Square::new(3, 0).unwrap();
+        let d2 = Square::new(3, 1).unwrap();
+        let e1 = Square::new(4, 0).unwrap();
+        let e2 = Square::new(4, 1).unwrap();
+        let f1 = Square::new(5, 0).unwrap();
+        let f2 = Square::new(5, 1).unwrap();
+        let g1 = Square::new(6, 0).unwrap();
+        let g2 = Square::new(6, 1).unwrap();
+        let h1 = Square::new(7, 0).unwrap();
+        let h2 = Square::new(7, 1).unwrap();
+        let a7 = Square::new(0, 6).unwrap();
+        let a8 = Square::new(0, 7).unwrap();
+        let b7 = Square::new(1, 6).unwrap();
+        let b8 = Square::new(1, 7).unwrap();
+        let c7 = Square::new(2, 6).unwrap();
+        let c8 = Square::new(2, 7).unwrap();
+        let d7 = Square::new(3, 6).unwrap();
+        let d8 = Square::new(3, 7).unwrap();
+        let e7 = Square::new(4, 6).unwrap();
+        let e8 = Square::new(4, 7).unwrap();
+        let f7 = Square::new(5, 6).unwrap();
+        let f8 = Square::new(5, 7).unwrap();
+        let g7 = Square::new(6, 6).unwrap();
+        let g8 = Square::new(6, 7).unwrap();
+        let h7 = Square::new(7, 6).unwrap();
+        let h8 = Square::new(7, 7).unwrap();
+
+        board.set_piece(a1, white_rook);
+        board.set_piece(a2, white_pawn);
+        board.set_piece(b1, white_rook);
+        board.set_piece(b2, white_pawn);
+        board.set_piece(c1, white_rook);
+        board.set_piece(c2, white_pawn);
+        board.set_piece(d1, white_rook);
+        board.set_piece(d2, white_pawn);
+        board.set_piece(e1, white_rook);
+        board.set_piece(e2, white_pawn);
+        board.set_piece(f1, white_rook);
+        board.set_piece(f2, white_pawn);
+        board.set_piece(g1, white_rook);
+        board.set_piece(g2, white_pawn);
+        board.set_piece(h1, white_rook);
+        board.set_piece(h2, white_pawn);
+        board.set_piece(a7, white_pawn);
+        board.set_piece(a8, white_rook);
+        board.set_piece(b7, white_pawn);
+        board.set_piece(b8, white_rook);
+        board.set_piece(c7, white_pawn);
+        board.set_piece(c8, white_rook);
+        board.set_piece(d7, white_pawn);
+        board.set_piece(d8, white_rook);
+        board.set_piece(e7, white_pawn);
+        board.set_piece(e8, white_rook);
+        board.set_piece(f7, white_pawn);
+        board.set_piece(f8, white_rook);
+        board.set_piece(g7, white_pawn);
+        board.set_piece(g8, white_rook);
+        board.set_piece(h7, white_pawn);
+        board.set_piece(h8, white_rook);
+
+        board
     }
 }
 
@@ -179,8 +292,16 @@ mod tests {
 
         board.set_piece(e4, white_queen);
 
-        board.remove_piece(e4);
-
+        assert_eq!(board.remove_piece(e4), Some(white_queen));
         assert_eq!(board.piece_at(e4), None);
+    }
+
+    #[test]
+    fn remove_piece_on_empty_square() {
+        let mut board = Board::empty();
+
+        let e4 = Square::new(4, 3).unwrap();
+
+        assert_eq!(board.remove_piece(e4), None);
     }
 }
