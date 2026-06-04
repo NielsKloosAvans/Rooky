@@ -41,13 +41,18 @@ impl Board {
     pub fn piece_at(&self, square: Square) -> Option<Piece> {
         // Convert a 2D square into a 1D array index.
         // Example: e4 is file 4, rank 3, so index is 3 * 8 + 4 = 28.
-        let index = square.rank as usize * 8 + square.file as usize;
+        let index = square.index();
         self.squares[index]
     }
 
     pub fn set_piece(&mut self, square: Square, piece: Piece) {
-        let index = square.rank as usize * 8 + square.file as usize;
+        let index = square.index();
         self.squares[index] = Some(piece);
+    }
+
+    pub fn remove_piece(&mut self, square: Square) -> Option<Piece> {
+        let index = square.index();
+        self.squares[index].take()
     }
 }
 
@@ -159,5 +164,23 @@ mod tests {
         let h8 = Square::new(7, 7).unwrap();
 
         assert_eq!(h8.index(), 63);
+    }
+
+    #[test]
+    fn remove_piece_on_e4() {
+        let mut board = Board::empty();
+
+        let e4 = Square::new(4, 3).unwrap();
+
+        let white_queen = Piece {
+            color: Color::White,
+            kind: PieceKind::Queen,
+        };
+
+        board.set_piece(e4, white_queen);
+
+        board.remove_piece(e4);
+
+        assert_eq!(board.piece_at(e4), None);
     }
 }
