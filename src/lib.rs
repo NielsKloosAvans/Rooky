@@ -59,6 +59,11 @@ impl Square {
         }
         Some(Square { file, rank })
     }
+
+    pub fn index(&self) -> usize {
+        let index = self.rank as usize * 8 + self.file as usize;
+        return index;
+    }
 }
 
 #[cfg(test)]
@@ -137,6 +142,22 @@ mod tests {
 
     #[test]
     fn square_index_maps_e4_to_28() {
-        //todo
+        let e4 = Square::new(4, 3).unwrap();
+
+        assert_eq!(e4.index(), 28);
+    }
+
+    #[test]
+    fn square_index_maps_a1_to_0() {
+        let a1 = Square::new(0, 0).unwrap();
+
+        assert_eq!(a1.index(), 0);
+    }
+
+    #[test]
+    fn square_index_maps_h8_to_63() {
+        let h8 = Square::new(7, 7).unwrap();
+
+        assert_eq!(h8.index(), 63);
     }
 }
