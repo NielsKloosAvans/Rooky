@@ -1,9 +1,10 @@
-use crate::{Color, Piece, PieceKind, Square};
+use crate::{ChessMove, Color, Piece, PieceKind, Square};
 
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Board {
     // The board is stored as one flat array instead of 8 arrays of 8.
     // Each slot is either Some(piece) or None.
-    pub squares: [Option<Piece>; 64],
+    squares: [Option<Piece>; 64],
 }
 
 impl Board {
@@ -26,6 +27,16 @@ impl Board {
     pub fn remove_piece(&mut self, square: Square) -> Option<Piece> {
         let index = square.index();
         self.squares[index].take()
+    }
+
+    pub fn is_empty(&self, square: Square) -> bool {
+        self.piece_at(square).is_none()
+    }
+
+    pub fn make_move(&mut self, chess_move: ChessMove) {
+        if let Some(piece) = self.remove_piece(chess_move.from) {
+            self.set_piece(chess_move.to, piece);
+        }
     }
 
     pub fn starting_position() -> Board {
@@ -78,7 +89,7 @@ mod tests {
 
         let e4 = Square::new(4, 3).unwrap();
 
-        assert_eq!(board.piece_at(e4), None);
+        assert!(board.is_empty(e4));
     }
 
     #[test]
@@ -138,5 +149,49 @@ mod tests {
 
             assert_eq!(board.piece_at(square), expected_piece);
         }
+    }
+
+    #[test]
+    fn board_is_not_empty_after_setting_a_piece() {
+        let mut board = Board::empty();
+
+        let e4 = Square::new(4, 3).unwrap();
+        let white_queen = Piece::new(Color::White, PieceKind::Queen);
+
+        board.set_piece(e4, white_queen);
+
+        assert!(!board.is_empty(e4))
+    }
+
+    #[test]
+    fn make_move_moves_piece_from_e2_to_e4() {
+        let mut board = Board::starting_position();
+        let e2 = Square::new(4, 1).unwrap();
+        let e4 = Square::new(4, 3).unwrap();
+
+        let e2_to_e4 = ChessMove::new(e2, e4);
+
+        board.make_move(e2_to_e4);
+
+        assert!(board.is_empty(e2));
+        assert_eq!(
+            board.piece_at(e4),
+            Some(Piece::new(Color::White, PieceKind::Pawn))
+        );
+    }
+
+    #[test]
+    fn make_move_from_empty_square_does_nothing() {
+        let mut board = Board::empty();
+
+        let e2 = Square::new(4, 1).unwrap();
+        let e4 = Square::new(4, 3).unwrap();
+
+        let e2_to_e4 = ChessMove::new(e2, e4);
+
+        board.make_move(e2_to_e4);
+
+        assert!(board.is_empty(e2));
+        assert!(board.is_empty(e4));
     }
 }
