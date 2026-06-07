@@ -22,6 +22,20 @@ impl Piece {
     }
 }
 
+impl PieceKind {
+    pub fn from_char(c: char) -> Option<PieceKind> {
+        match c.to_ascii_lowercase() {
+            'k' => Some(PieceKind::King),
+            'q' => Some(PieceKind::Queen),
+            'r' => Some(PieceKind::Rook),
+            'b' => Some(PieceKind::Bishop),
+            'n' => Some(PieceKind::Knight),
+            'p' => Some(PieceKind::Pawn),
+            _ => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

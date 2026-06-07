@@ -14,6 +14,27 @@ impl Game {
             move_history: Vec::new(),
         }
     }
+
+    pub fn from_fen(fen: &str) -> Option<Game> {
+        let mut parts = fen.split_whitespace();
+        let board = Board::from_fen_piece_placement(parts.next()?)?;
+        let side_to_move = match parts.next()? {
+            "w" => Color::White,
+            "b" => Color::Black,
+            _ => return None,
+        };
+
+        if parts.next().is_some() {
+            return None;
+        }
+
+        Some(Game {
+            board,
+            side_to_move,
+            move_history: Vec::new(),
+        })
+    }
+
     pub fn make_move(&mut self, chess_move: ChessMove) -> Option<Piece> {
         let side_that_moved = self.side_to_move;
         let captured_piece = self.board.make_move(chess_move);
@@ -42,6 +63,8 @@ mod tests {
     use crate::{ChessMove, Square};
 
     use super::*;
+
+    const STARTING_FEN_BOARD: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
 
     #[test]
     fn new_game_starts_with_white_to_move() {
@@ -122,5 +145,47 @@ mod tests {
         game.make_move(chess_move);
 
         assert_eq!(game.last_move(), Some(&expected_record));
+    }
+
+    #[test]
+    fn game_from_fen_sets_board() {
+        let game = Game::from_fen(&format!("{STARTING_FEN_BOARD} w")).unwrap();
+
+        assert_eq!(game.board, Board::starting_position());
+    }
+
+    #[test]
+    fn game_from_fen_sets_white_to_move() {
+        let game = Game::from_fen("8/8/8/8/8/8/8/8 w").unwrap();
+
+        assert_eq!(game.side_to_move, Color::White);
+    }
+
+    #[test]
+    fn game_from_fen_sets_black_to_move() {
+        let game = Game::from_fen("8/8/8/8/8/8/8/8 b").unwrap();
+
+        assert_eq!(game.side_to_move, Color::Black);
+    }
+
+    #[test]
+    fn game_from_fen_starts_with_empty_move_history() {
+        let game = Game::from_fen("8/8/8/8/8/8/8/8 w").unwrap();
+
+        assert!(game.move_history().is_empty());
+    }
+
+    #[test]
+    fn game_from_fen_rejects_invalid_board() {
+        let game = Game::from_fen("8/8/8/8/8/8/8 w");
+
+        assert!(game.is_none());
+    }
+
+    #[test]
+    fn game_from_fen_rejects_invalid_side_to_move() {
+        let game = Game::from_fen("8/8/8/8/8/8/8/8 x");
+
+        assert!(game.is_none());
     }
 }

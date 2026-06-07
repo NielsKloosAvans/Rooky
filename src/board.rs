@@ -14,6 +14,49 @@ impl Board {
         }
     }
 
+    pub fn from_fen_piece_placement(fen: &str) -> Option<Board> {
+        let mut board = Board::empty();
+
+        let ranks: Vec<&str> = fen.split('/').collect();
+        if ranks.len() != 8 {
+            return None;
+        }
+
+        for (fen_rank, rank_text) in ranks.iter().enumerate() {
+            let rank = 7 - fen_rank as u8;
+            let mut file = 0;
+
+            for c in rank_text.chars() {
+                if c.is_ascii_digit() {
+                    let empty_squares = c.to_digit(10)? as u8;
+                    if empty_squares == 0 {
+                        return None;
+                    }
+
+                    file += empty_squares;
+                } else {
+                    let color = if c.is_ascii_uppercase() {
+                        Color::White
+                    } else {
+                        Color::Black
+                    };
+                    let kind = PieceKind::from_char(c)?;
+                    let square = Square::new(file, rank)?;
+                    let piece = Piece::new(color, kind);
+
+                    board.set_piece(square, piece);
+                    file += 1;
+                }
+            }
+
+            if file != 8 {
+                return None;
+            }
+        }
+
+        Some(board)
+    }
+
     pub fn piece_at(&self, square: Square) -> Option<Piece> {
         let index = square.index();
         self.squares[index]
@@ -228,5 +271,56 @@ mod tests {
 
         assert!(board.is_empty(e2));
         assert!(board.is_empty(e4));
+    }
+
+    #[test]
+    fn fen_piece_placement_starting_position_matches_starting_position() {
+        let board = Board::from_fen_piece_placement("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+
+        assert_eq!(board, Some(Board::starting_position()));
+    }
+
+    #[test]
+    fn fen_piece_placement_empty_board_has_no_piece_on_e4() {
+        let board = Board::from_fen_piece_placement("8/8/8/8/8/8/8/8").unwrap();
+
+        let e4 = Square::new(4, 3).unwrap();
+
+        assert!(board.is_empty(e4));
+    }
+
+    #[test]
+    fn fen_piece_placement_rejects_too_few_ranks() {
+        let board = Board::from_fen_piece_placement("rnbqkbnr/pppppppp/8/8/8/8/8");
+
+        assert!(board.is_none());
+    }
+
+    #[test]
+    fn fen_piece_placement_rejects_too_many_ranks() {
+        let board = Board::from_fen_piece_placement("rnbqkbnr/pppppppp/8/8/8/8/8/8/8");
+
+        assert!(board.is_none());
+    }
+
+    #[test]
+    fn fen_piece_placement_rejects_rank_with_too_few_files() {
+        let board = Board::from_fen_piece_placement("7/8/8/8/8/8/8/8");
+
+        assert!(board.is_none());
+    }
+
+    #[test]
+    fn fen_piece_placement_rejects_rank_with_too_many_files() {
+        let board = Board::from_fen_piece_placement("9/8/8/8/8/8/8/8");
+
+        assert!(board.is_none());
+    }
+
+    #[test]
+    fn fen_piece_placement_rejects_unknown_piece_letter() {
+        let board = Board::from_fen_piece_placement("x7/8/8/8/8/8/8/8");
+
+        assert!(board.is_none());
     }
 }
