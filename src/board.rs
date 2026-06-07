@@ -33,9 +33,13 @@ impl Board {
         self.piece_at(square).is_none()
     }
 
-    pub fn make_move(&mut self, chess_move: ChessMove) {
+    pub fn make_move(&mut self, chess_move: ChessMove) -> Option<Piece> {
         if let Some(piece) = self.remove_piece(chess_move.from) {
+            let captured_piece = self.piece_at(chess_move.to);
             self.set_piece(chess_move.to, piece);
+            captured_piece
+        } else {
+            None
         }
     }
 
@@ -178,6 +182,37 @@ mod tests {
             board.piece_at(e4),
             Some(Piece::new(Color::White, PieceKind::Pawn))
         );
+    }
+
+    #[test]
+    fn make_move_to_empty_square_returns_none() {
+        let mut board = Board::starting_position();
+        let e2 = Square::new(4, 1).unwrap();
+        let e4 = Square::new(4, 3).unwrap();
+
+        let e2_to_e4 = ChessMove::new(e2, e4);
+
+        let captured_piece = board.make_move(e2_to_e4);
+
+        assert_eq!(captured_piece, None);
+    }
+
+    #[test]
+    fn make_move_to_occupied_square_returns_captured_piece() {
+        let mut board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+        let e5 = Square::new(4, 4).unwrap();
+        let white_queen = Piece::new(Color::White, PieceKind::Queen);
+        let black_pawn = Piece::new(Color::Black, PieceKind::Pawn);
+
+        board.set_piece(e4, white_queen);
+        board.set_piece(e5, black_pawn);
+
+        let captured_piece = board.make_move(ChessMove::new(e4, e5));
+
+        assert_eq!(captured_piece, Some(black_pawn));
+        assert!(board.is_empty(e4));
+        assert_eq!(board.piece_at(e5), Some(white_queen));
     }
 
     #[test]

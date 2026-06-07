@@ -1,4 +1,4 @@
-use crate::{Board, ChessMove, Color};
+use crate::{Board, ChessMove, Color, Piece};
 
 pub struct Game {
     pub board: Board,
@@ -12,9 +12,9 @@ impl Game {
             side_to_move: Color::White,
         }
     }
-    pub fn make_move(&mut self, chess_move: ChessMove) {
-        self.board.make_move(chess_move);
+    pub fn make_move(&mut self, chess_move: ChessMove) -> Option<Piece> {
         self.side_to_move = self.side_to_move.opposite();
+        self.board.make_move(chess_move)
     }
 }
 
