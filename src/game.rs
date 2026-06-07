@@ -1,4 +1,4 @@
-use crate::{Board, Color, MoveRecord, Piece};
+use crate::{Board, ChessMove, Color, MoveRecord, Piece};
 
 pub struct Game {
     pub board: Board,
@@ -14,12 +14,11 @@ impl Game {
             move_history: Vec::new(),
         }
     }
-    pub fn make_move(&mut self, move_record: MoveRecord) -> Option<Piece> {
-        let captured_piece = self.board.make_move(move_record.chess_move);
-        let last_move = self.move_history.last_mut();
-        if let Some(last_move) = last_move {
-            last_move.captured_piece = captured_piece;
-        }
+    pub fn make_move(&mut self, chess_move: ChessMove) -> Option<Piece> {
+        let side_that_moved = self.side_to_move;
+        let captured_piece = self.board.make_move(chess_move);
+        let move_record = MoveRecord::new(chess_move, captured_piece, side_that_moved);
+
         self.move_history.push(move_record);
         self.side_to_move = self.side_to_move.opposite();
         captured_piece
@@ -40,10 +39,7 @@ impl Default for Game {
 
 #[cfg(test)]
 mod tests {
-    use crate::ChessMove;
-    use crate::Color;
-    use crate::PieceKind;
-    use crate::Square;
+    use crate::{ChessMove, Square};
 
     use super::*;
 
@@ -68,12 +64,8 @@ mod tests {
         let e2 = Square::new(4, 1).unwrap();
         let e4 = Square::new(4, 3).unwrap();
         let chess_move = ChessMove { from: e2, to: e4 };
-        let move_record = MoveRecord {
-            chess_move,
-            captured_piece: None,
-            side_that_moved: Color::White,
-        };
-        game.make_move(move_record);
+
+        game.make_move(chess_move);
 
         assert_eq!(game.side_to_move, Color::Black);
     }
@@ -82,76 +74,40 @@ mod tests {
     fn new_game_has_empty_move_history() {
         let game = Game::new();
 
-        assert!(game.move_history.is_empty());
+        assert!(game.move_history().is_empty());
     }
 
     #[test]
-    fn move_record_stores_chess_move() {
+    fn game_make_move_adds_move_to_history() {
         let mut game = Game::new();
 
         let e2 = Square::new(4, 1).unwrap();
         let e4 = Square::new(4, 3).unwrap();
         let chess_move = ChessMove { from: e2, to: e4 };
-        let move_record = MoveRecord {
-            chess_move,
-            captured_piece: None,
-            side_that_moved: Color::White,
-        };
-        game.make_move(move_record);
 
-        assert_eq!(game.move_history.len(), 1);
-        assert_eq!(game.move_history[0].chess_move.from, e2);
-        assert_eq!(game.move_history[0].chess_move.to, e4);
-        assert_eq!(game.move_history[0].side_that_moved, Color::White);
+        game.make_move(chess_move);
+
+        assert_eq!(game.move_history().len(), 1);
     }
 
     #[test]
-    fn move_record_stores_captured_piece() {
+    fn game_make_move_records_the_move_that_was_played() {
         let mut game = Game::new();
 
         let e2 = Square::new(4, 1).unwrap();
         let e4 = Square::new(4, 3).unwrap();
         let chess_move = ChessMove { from: e2, to: e4 };
-        let move_record = MoveRecord {
-            chess_move,
-            captured_piece: Some(Piece::new(Color::Black, PieceKind::Queen)),
-            side_that_moved: Color::White,
-        };
-        game.make_move(move_record);
+        let expected_record = MoveRecord::new(chess_move, None, Color::White);
 
-        assert_eq!(game.move_history.len(), 1);
-        assert_eq!(
-            game.move_history[0].captured_piece,
-            Some(Piece::new(Color::Black, PieceKind::Queen))
-        );
-        assert_eq!(
-            game.move_history[0].captured_piece.unwrap().color,
-            Color::Black
-        );
-    }
+        game.make_move(chess_move);
 
-    #[test]
-    fn move_record_stores_side_that_moved() {
-        let mut game = Game::new();
-
-        let e2 = Square::new(4, 1).unwrap();
-        let e4 = Square::new(4, 3).unwrap();
-        let chess_move = ChessMove { from: e2, to: e4 };
-        let move_record = MoveRecord {
-            chess_move,
-            captured_piece: None,
-            side_that_moved: Color::White,
-        };
-        game.make_move(move_record);
-
-        assert_eq!(game.move_history.len(), 1);
-        assert_eq!(game.move_history[0].side_that_moved, Color::White);
+        assert_eq!(game.move_history(), &[expected_record]);
     }
 
     #[test]
     fn new_game_has_no_last_move() {
         let game = Game::new();
-        assert!(game.move_history.is_empty());
+        assert!(game.last_move().is_none());
     }
 
     #[test]
@@ -161,16 +117,10 @@ mod tests {
         let e2 = Square::new(4, 1).unwrap();
         let e4 = Square::new(4, 3).unwrap();
         let chess_move = ChessMove { from: e2, to: e4 };
-        let move_record = MoveRecord {
-            chess_move,
-            captured_piece: None,
-            side_that_moved: Color::White,
-        };
-        game.make_move(move_record);
+        let expected_record = MoveRecord::new(chess_move, None, Color::White);
 
-        assert_eq!(game.move_history.len(), 1);
-        assert_eq!(game.move_history[0].chess_move.from, e2);
-        assert_eq!(game.move_history[0].chess_move.to, e4);
-        assert_eq!(game.move_history[0].side_that_moved, Color::White);
+        game.make_move(chess_move);
+
+        assert_eq!(game.last_move(), Some(&expected_record));
     }
 }
