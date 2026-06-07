@@ -1,4 +1,4 @@
-use crate::{ChessMove, Color, Piece, PieceKind, Square};
+use crate::{ChessMove, Color, FenError, Piece, PieceKind, Square};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Board {
@@ -14,12 +14,12 @@ impl Board {
         }
     }
 
-    pub fn from_fen_piece_placement(fen: &str) -> Option<Board> {
+    pub fn from_fen_piece_placement(fen: &str) -> Result<Board, FenError> {
         let mut board = Board::empty();
 
         let ranks: Vec<&str> = fen.split('/').collect();
         if ranks.len() != 8 {
-            return None;
+            return Err(FenError::WrongRankCount);
         }
 
         for (fen_rank, rank_text) in ranks.iter().enumerate() {
@@ -28,9 +28,9 @@ impl Board {
 
             for c in rank_text.chars() {
                 if c.is_ascii_digit() {
-                    let empty_squares = c.to_digit(10)? as u8;
+                    let empty_squares = c.to_digit(10).ok_or(FenError::WrongFileCount)? as u8;
                     if empty_squares == 0 {
-                        return None;
+                        return Err(FenError::WrongFileCount);
                     }
 
                     file += empty_squares;
@@ -40,8 +40,8 @@ impl Board {
                     } else {
                         Color::Black
                     };
-                    let kind = PieceKind::from_char(c)?;
-                    let square = Square::new(file, rank)?;
+                    let kind = PieceKind::from_char(c).ok_or(FenError::InvalidPiece)?;
+                    let square = Square::new(file, rank).ok_or(FenError::WrongFileCount)?;
                     let piece = Piece::new(color, kind);
 
                     board.set_piece(square, piece);
@@ -50,11 +50,11 @@ impl Board {
             }
 
             if file != 8 {
-                return None;
+                return Err(FenError::WrongFileCount);
             }
         }
 
-        Some(board)
+        Ok(board)
     }
 
     pub fn piece_at(&self, square: Square) -> Option<Piece> {
@@ -277,7 +277,7 @@ mod tests {
     fn fen_piece_placement_starting_position_matches_starting_position() {
         let board = Board::from_fen_piece_placement("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
 
-        assert_eq!(board, Some(Board::starting_position()));
+        assert_eq!(board, Ok(Board::starting_position()));
     }
 
     #[test]
@@ -293,34 +293,34 @@ mod tests {
     fn fen_piece_placement_rejects_too_few_ranks() {
         let board = Board::from_fen_piece_placement("rnbqkbnr/pppppppp/8/8/8/8/8");
 
-        assert!(board.is_none());
+        assert_eq!(board, Err(FenError::WrongRankCount));
     }
 
     #[test]
     fn fen_piece_placement_rejects_too_many_ranks() {
         let board = Board::from_fen_piece_placement("rnbqkbnr/pppppppp/8/8/8/8/8/8/8");
 
-        assert!(board.is_none());
+        assert_eq!(board, Err(FenError::WrongRankCount));
     }
 
     #[test]
     fn fen_piece_placement_rejects_rank_with_too_few_files() {
         let board = Board::from_fen_piece_placement("7/8/8/8/8/8/8/8");
 
-        assert!(board.is_none());
+        assert_eq!(board, Err(FenError::WrongFileCount));
     }
 
     #[test]
     fn fen_piece_placement_rejects_rank_with_too_many_files() {
         let board = Board::from_fen_piece_placement("9/8/8/8/8/8/8/8");
 
-        assert!(board.is_none());
+        assert_eq!(board, Err(FenError::WrongFileCount));
     }
 
     #[test]
     fn fen_piece_placement_rejects_unknown_piece_letter() {
         let board = Board::from_fen_piece_placement("x7/8/8/8/8/8/8/8");
 
-        assert!(board.is_none());
+        assert_eq!(board, Err(FenError::InvalidPiece));
     }
 }

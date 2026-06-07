@@ -1,4 +1,4 @@
-use crate::{Board, ChessMove, Color, MoveRecord, Piece};
+use crate::{Board, ChessMove, Color, FenError, MoveRecord, Piece};
 
 pub struct Game {
     pub board: Board,
@@ -15,20 +15,22 @@ impl Game {
         }
     }
 
-    pub fn from_fen(fen: &str) -> Option<Game> {
+    pub fn from_fen(fen: &str) -> Result<Game, FenError> {
         let mut parts = fen.split_whitespace();
-        let board = Board::from_fen_piece_placement(parts.next()?)?;
-        let side_to_move = match parts.next()? {
+        let board_text = parts.next().ok_or(FenError::MissingBoard)?;
+        let board = Board::from_fen_piece_placement(board_text)?;
+        let side_to_move_text = parts.next().ok_or(FenError::MissingSideToMove)?;
+        let side_to_move = match side_to_move_text {
             "w" => Color::White,
             "b" => Color::Black,
-            _ => return None,
+            _ => return Err(FenError::InvalidSideToMove),
         };
 
         if parts.next().is_some() {
-            return None;
+            return Err(FenError::TooManyFields);
         }
 
-        Some(Game {
+        Ok(Game {
             board,
             side_to_move,
             move_history: Vec::new(),
@@ -60,7 +62,7 @@ impl Default for Game {
 
 #[cfg(test)]
 mod tests {
-    use crate::{ChessMove, Square};
+    use crate::{ChessMove, FenError, Square};
 
     use super::*;
 
@@ -179,13 +181,34 @@ mod tests {
     fn game_from_fen_rejects_invalid_board() {
         let game = Game::from_fen("8/8/8/8/8/8/8 w");
 
-        assert!(game.is_none());
+        assert!(matches!(game, Err(FenError::WrongRankCount)));
     }
 
     #[test]
     fn game_from_fen_rejects_invalid_side_to_move() {
         let game = Game::from_fen("8/8/8/8/8/8/8/8 x");
 
-        assert!(game.is_none());
+        assert!(matches!(game, Err(FenError::InvalidSideToMove)));
+    }
+
+    #[test]
+    fn game_from_fen_rejects_missing_board() {
+        let game = Game::from_fen("");
+
+        assert!(matches!(game, Err(FenError::MissingBoard)));
+    }
+
+    #[test]
+    fn game_from_fen_rejects_missing_side_to_move() {
+        let game = Game::from_fen("8/8/8/8/8/8/8/8");
+
+        assert!(matches!(game, Err(FenError::MissingSideToMove)));
+    }
+
+    #[test]
+    fn game_from_fen_rejects_too_many_fields() {
+        let game = Game::from_fen("8/8/8/8/8/8/8/8 w extra");
+
+        assert!(matches!(game, Err(FenError::TooManyFields)));
     }
 }
