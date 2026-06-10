@@ -115,6 +115,95 @@ impl Board {
         moves
     }
 
+    pub fn knight_moves_from(&self, square: Square) -> Vec<ChessMove> {
+        let Some(piece) = self.piece_at(square) else {
+            return Vec::new();
+        };
+
+        if piece.kind != PieceKind::Knight {
+            return Vec::new();
+        };
+
+        let knight_offsets: [(i8, i8); 8] = [
+            (1, 2),
+            (2, 1),
+            (2, -1),
+            (1, -2),
+            (-1, -2),
+            (-2, -1),
+            (-2, 1),
+            (-1, 2),
+        ];
+
+        let mut moves = Vec::new();
+
+        for (file_offset, rank_offset) in knight_offsets {
+            let target_file = square.file() as i8 + file_offset;
+            let target_rank = square.rank() as i8 + rank_offset;
+
+            if !(0..=7).contains(&target_file) || !(0..=7).contains(&target_rank) {
+                continue;
+            }
+
+            let target_square = Square::new(target_file as u8, target_rank as u8).unwrap();
+
+            if self.is_empty(target_square) {
+                moves.push(ChessMove::new(square, target_square));
+            }
+            if let Some(target_piece) = self.piece_at(target_square)
+                && target_piece.color != piece.color
+            {
+                moves.push(ChessMove::new(square, target_square));
+            }
+        }
+
+        moves
+    }
+
+    pub fn king_moves_from(&self, square: Square) -> Vec<ChessMove> {
+        let Some(piece) = self.piece_at(square) else {
+            return Vec::new();
+        };
+
+        if piece.kind != PieceKind::King {
+            return Vec::new();
+        };
+
+        let king_offsets: [(i8, i8); 8] = [
+            (0, 1),
+            (1, 1),
+            (1, 0),
+            (1, -1),
+            (0, -1),
+            (-1, -1),
+            (-1, 0),
+            (-1, 1),
+        ];
+
+        let mut moves = Vec::new();
+
+        for (file_offset, rank_offset) in king_offsets {
+            let target_file = square.file() as i8 + file_offset;
+            let target_rank = square.rank() as i8 + rank_offset;
+
+            if !(0..=7).contains(&target_file) || !(0..=7).contains(&target_rank) {
+                continue;
+            }
+
+            let target_square = Square::new(target_file as u8, target_rank as u8).unwrap();
+
+            if self.is_empty(target_square) {
+                moves.push(ChessMove::new(square, target_square));
+            }
+            if let Some(target_piece) = self.piece_at(target_square)
+                && target_piece.color != piece.color
+            {
+                moves.push(ChessMove::new(square, target_square));
+            }
+        }
+        moves
+    }
+
     pub fn piece_at(&self, square: Square) -> Option<Piece> {
         let index = square.index();
         self.squares[index]
@@ -632,5 +721,170 @@ mod tests {
 
         assert_eq!(moves, vec![ChessMove::new(h4, h5)]);
         assert!(!moves.contains(&ChessMove::new(h4, a5)));
+    }
+
+    #[test]
+    fn white_knight_on_e4_can_move_to_8_squares() {
+        let mut board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+
+        board.set_piece(e4, Piece::new(Color::White, PieceKind::Knight));
+
+        let expected_moves = vec![
+            ChessMove::new(e4, Square::new(5, 5).unwrap()),
+            ChessMove::new(e4, Square::new(6, 4).unwrap()),
+            ChessMove::new(e4, Square::new(6, 2).unwrap()),
+            ChessMove::new(e4, Square::new(5, 1).unwrap()),
+            ChessMove::new(e4, Square::new(3, 1).unwrap()),
+            ChessMove::new(e4, Square::new(2, 2).unwrap()),
+            ChessMove::new(e4, Square::new(2, 4).unwrap()),
+            ChessMove::new(e4, Square::new(3, 5).unwrap()),
+        ];
+
+        assert_eq!(board.knight_moves_from(e4), expected_moves);
+    }
+
+    #[test]
+    fn knight_on_a1_does_not_wrap_off_board() {
+        let mut board = Board::empty();
+        let a1 = Square::new(0, 0).unwrap();
+
+        board.set_piece(a1, Piece::new(Color::White, PieceKind::Knight));
+
+        let expected_moves = vec![
+            ChessMove::new(a1, Square::new(1, 2).unwrap()),
+            ChessMove::new(a1, Square::new(2, 1).unwrap()),
+        ];
+
+        assert_eq!(board.knight_moves_from(a1), expected_moves);
+    }
+
+    #[test]
+    fn knight_can_capture_enemy_piece() {
+        let mut board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+        let f6 = Square::new(5, 5).unwrap();
+
+        board.set_piece(e4, Piece::new(Color::White, PieceKind::Knight));
+        board.set_piece(f6, Piece::new(Color::Black, PieceKind::Pawn));
+
+        assert!(
+            board
+                .knight_moves_from(e4)
+                .contains(&ChessMove::new(e4, f6))
+        );
+    }
+
+    #[test]
+    fn knight_cannot_capture_own_piece() {
+        let mut board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+        let f6 = Square::new(5, 5).unwrap();
+
+        board.set_piece(e4, Piece::new(Color::White, PieceKind::Knight));
+        board.set_piece(f6, Piece::new(Color::White, PieceKind::Pawn));
+
+        assert!(
+            !board
+                .knight_moves_from(e4)
+                .contains(&ChessMove::new(e4, f6))
+        );
+    }
+
+    #[test]
+    fn empty_square_has_no_knight_moves() {
+        let board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+
+        assert!(board.knight_moves_from(e4).is_empty());
+    }
+
+    #[test]
+    fn pawn_square_has_no_knight_moves() {
+        let mut board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+
+        board.set_piece(e4, Piece::new(Color::White, PieceKind::Pawn));
+
+        assert!(board.knight_moves_from(e4).is_empty());
+    }
+
+    #[test]
+    fn white_king_on_e4_can_move_to_8_squares() {
+        let mut board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+
+        board.set_piece(e4, Piece::new(Color::White, PieceKind::King));
+
+        let expected_moves = vec![
+            ChessMove::new(e4, Square::new(4, 4).unwrap()),
+            ChessMove::new(e4, Square::new(5, 4).unwrap()),
+            ChessMove::new(e4, Square::new(5, 3).unwrap()),
+            ChessMove::new(e4, Square::new(5, 2).unwrap()),
+            ChessMove::new(e4, Square::new(4, 2).unwrap()),
+            ChessMove::new(e4, Square::new(3, 2).unwrap()),
+            ChessMove::new(e4, Square::new(3, 3).unwrap()),
+            ChessMove::new(e4, Square::new(3, 4).unwrap()),
+        ];
+
+        assert_eq!(board.king_moves_from(e4), expected_moves);
+    }
+
+    #[test]
+    fn king_on_a1_does_not_wrap_off_board() {
+        let mut board = Board::empty();
+        let a1 = Square::new(0, 0).unwrap();
+
+        board.set_piece(a1, Piece::new(Color::White, PieceKind::King));
+
+        let expected_moves = vec![
+            ChessMove::new(a1, Square::new(0, 1).unwrap()),
+            ChessMove::new(a1, Square::new(1, 1).unwrap()),
+            ChessMove::new(a1, Square::new(1, 0).unwrap()),
+        ];
+
+        assert_eq!(board.king_moves_from(a1), expected_moves);
+    }
+
+    #[test]
+    fn king_can_capture_enemy_piece() {
+        let mut board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+        let e5 = Square::new(4, 4).unwrap();
+
+        board.set_piece(e4, Piece::new(Color::White, PieceKind::King));
+        board.set_piece(e5, Piece::new(Color::Black, PieceKind::Pawn));
+
+        assert!(board.king_moves_from(e4).contains(&ChessMove::new(e4, e5)));
+    }
+
+    #[test]
+    fn king_cannot_capture_own_piece() {
+        let mut board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+        let e5 = Square::new(4, 4).unwrap();
+
+        board.set_piece(e4, Piece::new(Color::White, PieceKind::King));
+        board.set_piece(e5, Piece::new(Color::White, PieceKind::Pawn));
+
+        assert!(!board.king_moves_from(e4).contains(&ChessMove::new(e4, e5)));
+    }
+
+    #[test]
+    fn empty_square_has_no_king_moves() {
+        let board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+
+        assert!(board.king_moves_from(e4).is_empty());
+    }
+
+    #[test]
+    fn knight_square_has_no_king_moves() {
+        let mut board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+
+        board.set_piece(e4, Piece::new(Color::White, PieceKind::Knight));
+
+        assert!(board.king_moves_from(e4).is_empty());
     }
 }
