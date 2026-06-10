@@ -57,6 +57,35 @@ impl Board {
         Ok(board)
     }
 
+    pub fn pawn_moves_from(&self, square: Square) -> Vec<ChessMove> {
+        let Some(piece) = self.piece_at(square) else {
+            return Vec::new();
+        };
+
+        if piece.kind != PieceKind::Pawn {
+            return Vec::new();
+        }
+
+        let next_rank = match piece.color {
+            Color::White => square.rank().checked_add(1),
+            Color::Black => square.rank().checked_sub(1),
+        };
+
+        let Some(next_rank) = next_rank else {
+            return Vec::new();
+        };
+
+        let Some(to) = Square::new(square.file(), next_rank) else {
+            return Vec::new();
+        };
+
+        if self.is_empty(to) {
+            vec![ChessMove::new(square, to)]
+        } else {
+            Vec::new()
+        }
+    }
+
     pub fn piece_at(&self, square: Square) -> Option<Piece> {
         let index = square.index();
         self.squares[index]
@@ -322,5 +351,69 @@ mod tests {
         let board = Board::from_fen_piece_placement("x7/8/8/8/8/8/8/8");
 
         assert_eq!(board, Err(FenError::InvalidPiece));
+    }
+
+    #[test]
+    fn white_pawn_on_e2_can_move_to_e3() {
+        let mut board = Board::empty();
+        let e2 = Square::new(4, 1).unwrap();
+        let e3 = Square::new(4, 2).unwrap();
+
+        board.set_piece(e2, Piece::new(Color::White, PieceKind::Pawn));
+
+        assert_eq!(board.pawn_moves_from(e2), vec![ChessMove::new(e2, e3)]);
+    }
+
+    #[test]
+    fn black_pawn_on_e7_can_move_to_e6() {
+        let mut board = Board::empty();
+        let e7 = Square::new(4, 6).unwrap();
+        let e6 = Square::new(4, 5).unwrap();
+
+        board.set_piece(e7, Piece::new(Color::Black, PieceKind::Pawn));
+
+        assert_eq!(board.pawn_moves_from(e7), vec![ChessMove::new(e7, e6)]);
+    }
+
+    #[test]
+    fn white_pawn_blocked_on_e2_has_no_moves() {
+        let mut board = Board::empty();
+        let e2 = Square::new(4, 1).unwrap();
+        let e3 = Square::new(4, 2).unwrap();
+
+        board.set_piece(e2, Piece::new(Color::White, PieceKind::Pawn));
+        board.set_piece(e3, Piece::new(Color::Black, PieceKind::Knight));
+
+        assert!(board.pawn_moves_from(e2).is_empty());
+    }
+
+    #[test]
+    fn black_pawn_blocked_on_e7_has_no_moves() {
+        let mut board = Board::empty();
+        let e7 = Square::new(4, 6).unwrap();
+        let e6 = Square::new(4, 5).unwrap();
+
+        board.set_piece(e7, Piece::new(Color::Black, PieceKind::Pawn));
+        board.set_piece(e6, Piece::new(Color::White, PieceKind::Knight));
+
+        assert!(board.pawn_moves_from(e7).is_empty());
+    }
+
+    #[test]
+    fn empty_square_has_no_pawn_moves() {
+        let board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+
+        assert!(board.pawn_moves_from(e4).is_empty());
+    }
+
+    #[test]
+    fn queen_square_has_no_pawn_moves() {
+        let mut board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+
+        board.set_piece(e4, Piece::new(Color::White, PieceKind::Queen));
+
+        assert!(board.pawn_moves_from(e4).is_empty());
     }
 }
