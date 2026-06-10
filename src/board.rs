@@ -204,6 +204,45 @@ impl Board {
         moves
     }
 
+    pub fn rook_moves_from(&self, square: Square) -> Vec<ChessMove> {
+        let Some(piece) = self.piece_at(square) else {
+            return Vec::new();
+        };
+
+        if piece.kind != PieceKind::Rook {
+            return Vec::new();
+        };
+
+        let rook_directions: [(i8, i8); 4] = [(0, 1), (1, 0), (0, -1), (-1, 0)];
+
+        let mut moves = Vec::new();
+
+        for (file_direction, rank_direction) in rook_directions {
+            let mut target_file = square.file() as i8 + file_direction;
+            let mut target_rank = square.rank() as i8 + rank_direction;
+
+            while (0..=7).contains(&target_file) && (0..=7).contains(&target_rank) {
+                let target_square = Square::new(target_file as u8, target_rank as u8).unwrap();
+
+                if self.is_empty(target_square) {
+                    moves.push(ChessMove::new(square, target_square));
+                }
+
+                if let Some(target_piece) = self.piece_at(target_square) {
+                    if target_piece.color != piece.color {
+                        moves.push(ChessMove::new(square, target_square));
+                    }
+                    break;
+                }
+
+                target_file += file_direction;
+                target_rank += rank_direction;
+            }
+        }
+
+        moves
+    }
+
     pub fn piece_at(&self, square: Square) -> Option<Piece> {
         let index = square.index();
         self.squares[index]
@@ -886,5 +925,131 @@ mod tests {
         board.set_piece(e4, Piece::new(Color::White, PieceKind::Knight));
 
         assert!(board.king_moves_from(e4).is_empty());
+    }
+
+    #[test]
+    fn rook_on_e4_can_move_along_rank_and_file() {
+        let mut board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+
+        board.set_piece(e4, Piece::new(Color::White, PieceKind::Rook));
+
+        let expected_moves = vec![
+            ChessMove::new(e4, Square::new(4, 4).unwrap()),
+            ChessMove::new(e4, Square::new(4, 5).unwrap()),
+            ChessMove::new(e4, Square::new(4, 6).unwrap()),
+            ChessMove::new(e4, Square::new(4, 7).unwrap()),
+            ChessMove::new(e4, Square::new(5, 3).unwrap()),
+            ChessMove::new(e4, Square::new(6, 3).unwrap()),
+            ChessMove::new(e4, Square::new(7, 3).unwrap()),
+            ChessMove::new(e4, Square::new(4, 2).unwrap()),
+            ChessMove::new(e4, Square::new(4, 1).unwrap()),
+            ChessMove::new(e4, Square::new(4, 0).unwrap()),
+            ChessMove::new(e4, Square::new(3, 3).unwrap()),
+            ChessMove::new(e4, Square::new(2, 3).unwrap()),
+            ChessMove::new(e4, Square::new(1, 3).unwrap()),
+            ChessMove::new(e4, Square::new(0, 3).unwrap()),
+        ];
+
+        assert_eq!(board.rook_moves_from(e4), expected_moves);
+    }
+
+    #[test]
+    fn rook_stops_before_own_piece() {
+        let mut board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+        let e5 = Square::new(4, 4).unwrap();
+        let e6 = Square::new(4, 5).unwrap();
+        let e7 = Square::new(4, 6).unwrap();
+
+        board.set_piece(e4, Piece::new(Color::White, PieceKind::Rook));
+        board.set_piece(e6, Piece::new(Color::White, PieceKind::Pawn));
+
+        let moves = board.rook_moves_from(e4);
+
+        assert!(moves.contains(&ChessMove::new(e4, e5)));
+        assert!(!moves.contains(&ChessMove::new(e4, e6)));
+        assert!(!moves.contains(&ChessMove::new(e4, e7)));
+    }
+
+    #[test]
+    fn rook_stops_before_own_piece_on_same_rank() {
+        let mut board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+        let f4 = Square::new(5, 3).unwrap();
+        let g4 = Square::new(6, 3).unwrap();
+        let h4 = Square::new(7, 3).unwrap();
+
+        board.set_piece(e4, Piece::new(Color::White, PieceKind::Rook));
+        board.set_piece(g4, Piece::new(Color::White, PieceKind::Pawn));
+
+        let moves = board.rook_moves_from(e4);
+
+        assert!(moves.contains(&ChessMove::new(e4, f4)));
+        assert!(!moves.contains(&ChessMove::new(e4, g4)));
+        assert!(!moves.contains(&ChessMove::new(e4, h4)));
+    }
+
+    #[test]
+    fn rook_can_capture_enemy_piece_then_stops() {
+        let mut board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+        let e5 = Square::new(4, 4).unwrap();
+        let e6 = Square::new(4, 5).unwrap();
+        let e7 = Square::new(4, 6).unwrap();
+
+        board.set_piece(e4, Piece::new(Color::White, PieceKind::Rook));
+        board.set_piece(e6, Piece::new(Color::Black, PieceKind::Pawn));
+
+        let moves = board.rook_moves_from(e4);
+
+        assert!(moves.contains(&ChessMove::new(e4, e5)));
+        assert!(moves.contains(&ChessMove::new(e4, e6)));
+        assert!(!moves.contains(&ChessMove::new(e4, e7)));
+    }
+
+    #[test]
+    fn rook_on_a1_does_not_wrap() {
+        let mut board = Board::empty();
+        let a1 = Square::new(0, 0).unwrap();
+
+        board.set_piece(a1, Piece::new(Color::White, PieceKind::Rook));
+
+        let expected_moves = vec![
+            ChessMove::new(a1, Square::new(0, 1).unwrap()),
+            ChessMove::new(a1, Square::new(0, 2).unwrap()),
+            ChessMove::new(a1, Square::new(0, 3).unwrap()),
+            ChessMove::new(a1, Square::new(0, 4).unwrap()),
+            ChessMove::new(a1, Square::new(0, 5).unwrap()),
+            ChessMove::new(a1, Square::new(0, 6).unwrap()),
+            ChessMove::new(a1, Square::new(0, 7).unwrap()),
+            ChessMove::new(a1, Square::new(1, 0).unwrap()),
+            ChessMove::new(a1, Square::new(2, 0).unwrap()),
+            ChessMove::new(a1, Square::new(3, 0).unwrap()),
+            ChessMove::new(a1, Square::new(4, 0).unwrap()),
+            ChessMove::new(a1, Square::new(5, 0).unwrap()),
+            ChessMove::new(a1, Square::new(6, 0).unwrap()),
+            ChessMove::new(a1, Square::new(7, 0).unwrap()),
+        ];
+
+        assert_eq!(board.rook_moves_from(a1), expected_moves);
+    }
+
+    #[test]
+    fn empty_square_has_no_rook_moves() {
+        let board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+
+        assert!(board.rook_moves_from(e4).is_empty());
+    }
+
+    #[test]
+    fn king_square_has_no_rook_moves() {
+        let mut board = Board::empty();
+        let e4 = Square::new(4, 3).unwrap();
+
+        board.set_piece(e4, Piece::new(Color::White, PieceKind::King));
+
+        assert!(board.rook_moves_from(e4).is_empty());
     }
 }
