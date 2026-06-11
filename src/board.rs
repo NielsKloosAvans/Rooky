@@ -7,6 +7,21 @@ pub struct Board {
     squares: [Option<Piece>; 64],
 }
 
+#[derive(Debug, Clone, Copy)]
+struct Direction {
+    file_delta: i8,
+    rank_delta: i8,
+}
+
+impl Direction {
+    fn new(file_delta: i8, rank_delta: i8) -> Direction {
+        Direction {
+            file_delta,
+            rank_delta,
+        }
+    }
+}
+
 impl Board {
     pub fn empty() -> Board {
         Board {
@@ -213,13 +228,27 @@ impl Board {
             return Vec::new();
         };
 
-        let rook_directions: [(i8, i8); 4] = [(0, 1), (1, 0), (0, -1), (-1, 0)];
+        let rook_directions = [
+            Direction::new(0, 1),
+            Direction::new(1, 0),
+            Direction::new(0, -1),
+            Direction::new(-1, 0),
+        ];
 
+        self.sliding_moves_from(square, piece, &rook_directions)
+    }
+
+    fn sliding_moves_from(
+        &self,
+        square: Square,
+        piece: Piece,
+        directions: &[Direction],
+    ) -> Vec<ChessMove> {
         let mut moves = Vec::new();
 
-        for (file_direction, rank_direction) in rook_directions {
-            let mut target_file = square.file() as i8 + file_direction;
-            let mut target_rank = square.rank() as i8 + rank_direction;
+        for direction in directions {
+            let mut target_file = square.file() as i8 + direction.file_delta;
+            let mut target_rank = square.rank() as i8 + direction.rank_delta;
 
             while (0..=7).contains(&target_file) && (0..=7).contains(&target_rank) {
                 let target_square = Square::new(target_file as u8, target_rank as u8).unwrap();
@@ -234,12 +263,10 @@ impl Board {
                     }
                     break;
                 }
-
-                target_file += file_direction;
-                target_rank += rank_direction;
+                target_file += direction.file_delta;
+                target_rank += direction.rank_delta;
             }
         }
-
         moves
     }
 
@@ -252,34 +279,14 @@ impl Board {
             return Vec::new();
         };
 
-        let bishop_directions: [(i8, i8); 4] = [(1, 1), (-1, 1), (1, -1), (-1, -1)];
+        let bishop_directions = [
+            Direction::new(1, 1),
+            Direction::new(-1, 1),
+            Direction::new(1, -1),
+            Direction::new(-1, -1),
+        ];
 
-        let mut moves = Vec::new();
-
-        for (file_direction, rank_direction) in bishop_directions {
-            let mut target_file = square.file() as i8 + file_direction;
-            let mut target_rank = square.rank() as i8 + rank_direction;
-
-            while (0..=7).contains(&target_file) && ((0..=7).contains(&target_rank)) {
-                let target_square = Square::new(target_file as u8, target_rank as u8).unwrap();
-
-                if self.is_empty(target_square) {
-                    moves.push(ChessMove::new(square, target_square));
-                }
-
-                if let Some(target_piece) = self.piece_at(target_square) {
-                    if target_piece.color != piece.color {
-                        moves.push(ChessMove::new(square, target_square))
-                    }
-                    break;
-                }
-
-                target_file += file_direction;
-                target_rank += rank_direction;
-            }
-        }
-
-        moves
+        self.sliding_moves_from(square, piece, &bishop_directions)
     }
 
     pub fn queen_moves_from(&self, square: Square) -> Vec<ChessMove> {
@@ -291,42 +298,18 @@ impl Board {
             return Vec::new();
         };
 
-        let queen_directions: [(i8, i8); 8] = [
-            (1, 1),
-            (0, 1),
-            (-1, 1),
-            (1, -1),
-            (0, -1),
-            (1, 0),
-            (-1, -1),
-            (-1, 0),
+        let queen_directions = [
+            Direction::new(1, 1),
+            Direction::new(0, 1),
+            Direction::new(-1, 1),
+            Direction::new(1, -1),
+            Direction::new(0, -1),
+            Direction::new(1, 0),
+            Direction::new(-1, -1),
+            Direction::new(-1, 0),
         ];
 
-        let mut moves = Vec::new();
-
-        for (file_direction, rank_direction) in queen_directions {
-            let mut target_file = square.file() as i8 + file_direction;
-            let mut target_rank = square.rank() as i8 + rank_direction;
-
-            while (0..=7).contains(&target_file) && (0..=7).contains(&target_rank) {
-                let target_square = Square::new(target_file as u8, target_rank as u8).unwrap();
-
-                if self.is_empty(target_square) {
-                    moves.push(ChessMove::new(square, target_square));
-                }
-
-                if let Some(target_piece) = self.piece_at(target_square) {
-                    if target_piece.color != piece.color {
-                        moves.push(ChessMove::new(square, target_square));
-                    }
-                    break;
-                }
-                target_file += file_direction;
-                target_rank += rank_direction;
-            }
-        }
-
-        moves
+        self.sliding_moves_from(square, piece, &queen_directions)
     }
 
     pub fn piece_at(&self, square: Square) -> Option<Piece> {
