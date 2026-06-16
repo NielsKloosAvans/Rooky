@@ -13,18 +13,24 @@ Rooky can currently:
 - Represent a chess board with 64 indexed squares.
 - Store pieces with a color and piece kind.
 - Build the normal starting position.
-- Parse the board and side-to-move parts of FEN.
+- Parse the board and side-to-move parts of FEN into a `Game`.
 - Move pieces on the board and record captured pieces.
 - Track side to move and move history.
-- Generate basic pseudo-legal moves for:
+- Generate pseudo-legal moves for:
   - Pawns
   - Knights
-  - Kings
+  - Bishops
   - Rooks
+  - Queens
+  - Kings
+- Generate pseudo-legal moves for a whole side.
+- Detect attacked squares.
+- Find a side's king square.
+- Detect whether a side is in check.
 
-The move generator does not yet handle all chess rules. Check, checkmate,
-castling, en passant, promotion, pins, and legal move filtering are still future
-work.
+The move generator does not yet filter legal moves. That means checkmate,
+stalemate, pins, castling, en passant, promotion, and full legal move generation
+are still future work.
 
 ## Board Coordinates
 
@@ -71,7 +77,8 @@ cargo clippy --all-targets --all-features
 
 ```text
 src/
-  board.rs        Board storage, FEN board parsing, and piece move generation
+  board.rs        Board storage, FEN board parsing, attacks, check, and moves
+  board_tests.rs  Board tests kept separate from board implementation
   chess_move.rs   Move type with from/to squares
   color.rs        White/black color type
   fen_error.rs    FEN parsing errors
@@ -85,17 +92,15 @@ src/
 
 Good next steps:
 
-1. Add bishop move generation.
-2. Add queen move generation by combining rook-like and bishop-like directions.
-3. Add legal move filtering so kings cannot move into check.
-4. Add check detection.
-5. Add special pawn rules: promotion and en passant.
-6. Add castling.
-7. Parse full FEN fields: castling rights, en passant square, halfmove clock,
+1. Add legal move filtering so moves that leave your own king in check are removed.
+2. Add checkmate and stalemate detection.
+3. Add special pawn rules: promotion and en passant.
+4. Add castling.
+5. Parse full FEN fields: castling rights, en passant square, halfmove clock,
    and fullmove number.
-8. Add a simple position evaluation.
-9. Add search with minimax and alpha-beta pruning.
-10. Connect the engine to a UCI loop so it can run in chess GUIs.
+6. Add a simple position evaluation.
+7. Add search with minimax and alpha-beta pruning.
+8. Connect the engine to a UCI loop so it can run in chess GUIs.
 
 ## Development Style
 
