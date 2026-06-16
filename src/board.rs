@@ -72,6 +72,14 @@ impl Board {
         Ok(board)
     }
 
+    pub fn is_in_check(&self, color: Color) -> bool {
+        let Some(king_square) = self.king_square(color) else {
+            return false;
+        };
+
+        self.is_square_attacked(king_square, color.opposite())
+    }
+
     pub fn pseudo_legal_moves_for(&self, color: Color) -> Vec<ChessMove> {
         let mut moves = Vec::new();
 

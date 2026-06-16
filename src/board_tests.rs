@@ -390,6 +390,73 @@ fn black_pawn_attacks_diagonal_squares_down_the_board() {
 }
 
 #[test]
+fn side_with_no_king_is_not_in_check() {
+    let board = Board::empty();
+
+    assert!(!board.is_in_check(Color::White));
+}
+
+#[test]
+fn white_king_alone_is_not_in_check() {
+    let mut board = Board::empty();
+    let e1 = Square::new(4, 0).unwrap();
+
+    board.set_piece(e1, Piece::new(Color::White, PieceKind::King));
+
+    assert!(!board.is_in_check(Color::White));
+}
+
+#[test]
+fn white_king_is_in_check_from_black_rook_on_same_file() {
+    let mut board = Board::empty();
+    let e1 = Square::new(4, 0).unwrap();
+    let e8 = Square::new(4, 7).unwrap();
+
+    board.set_piece(e1, Piece::new(Color::White, PieceKind::King));
+    board.set_piece(e8, Piece::new(Color::Black, PieceKind::Rook));
+
+    assert!(board.is_in_check(Color::White));
+}
+
+#[test]
+fn white_king_is_not_in_check_when_piece_blocks_rook() {
+    let mut board = Board::empty();
+    let e1 = Square::new(4, 0).unwrap();
+    let e4 = Square::new(4, 3).unwrap();
+    let e8 = Square::new(4, 7).unwrap();
+
+    board.set_piece(e1, Piece::new(Color::White, PieceKind::King));
+    board.set_piece(e4, Piece::new(Color::White, PieceKind::Bishop));
+    board.set_piece(e8, Piece::new(Color::Black, PieceKind::Rook));
+
+    assert!(!board.is_in_check(Color::White));
+}
+
+#[test]
+fn white_king_is_in_check_from_black_knight() {
+    let mut board = Board::empty();
+    let e1 = Square::new(4, 0).unwrap();
+    let f3 = Square::new(5, 2).unwrap();
+
+    board.set_piece(e1, Piece::new(Color::White, PieceKind::King));
+    board.set_piece(f3, Piece::new(Color::Black, PieceKind::Knight));
+
+    assert!(board.is_in_check(Color::White));
+}
+
+#[test]
+fn black_king_is_in_check_from_white_pawn() {
+    let mut board = Board::empty();
+    let d4 = Square::new(3, 3).unwrap();
+    let e5 = Square::new(4, 4).unwrap();
+
+    board.set_piece(d4, Piece::new(Color::White, PieceKind::Pawn));
+    board.set_piece(e5, Piece::new(Color::Black, PieceKind::King));
+
+    assert!(board.is_in_check(Color::Black));
+}
+
+#[test]
 fn white_pawn_on_e2_can_move_to_e3() {
     let mut board = Board::empty();
     let e2 = Square::new(4, 1).unwrap();
