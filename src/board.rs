@@ -72,6 +72,120 @@ impl Board {
         Ok(board)
     }
 
+    pub fn pseudo_legal_moves_for(&self, color: Color) -> Vec<ChessMove> {
+        let mut moves = Vec::new();
+
+        for rank in 0..8 {
+            for file in 0..8 {
+                let square = Square::new(file, rank).unwrap();
+
+                let Some(piece) = self.piece_at(square) else {
+                    continue;
+                };
+
+                if piece.color != color {
+                    continue;
+                }
+
+                moves.extend(self.piece_moves_from(square));
+            }
+        }
+
+        moves
+    }
+
+    pub fn king_square(&self, color: Color) -> Option<Square> {
+        for rank in 0..8 {
+            for file in 0..8 {
+                let square = Square::new(file, rank).unwrap();
+
+                let Some(piece) = self.piece_at(square) else {
+                    continue;
+                };
+
+                if piece.color == color && piece.kind == PieceKind::King {
+                    return Some(square);
+                }
+            }
+        }
+        None
+    }
+
+    pub fn is_square_attacked(&self, target: Square, by_color: Color) -> bool {
+        for rank in 0..8 {
+            for file in 0..8 {
+                let square = Square::new(file, rank).unwrap();
+
+                let Some(piece) = self.piece_at(square) else {
+                    continue;
+                };
+
+                if piece.color != by_color {
+                    continue;
+                }
+
+                if self.piece_attacks_square(square, piece, target) {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
+    fn piece_attacks_square(&self, from: Square, piece: Piece, target: Square) -> bool {
+        match piece.kind {
+            PieceKind::Pawn => Self::pawn_attacks_square(from, piece.color, target),
+            PieceKind::Knight => self
+                .knight_moves_from(from)
+                .into_iter()
+                .any(|chess_move| chess_move.to == target),
+            PieceKind::Bishop => self
+                .bishop_moves_from(from)
+                .into_iter()
+                .any(|chess_move| chess_move.to == target),
+            PieceKind::Rook => self
+                .rook_moves_from(from)
+                .into_iter()
+                .any(|chess_move| chess_move.to == target),
+            PieceKind::Queen => self
+                .queen_moves_from(from)
+                .into_iter()
+                .any(|chess_move| chess_move.to == target),
+            PieceKind::King => self
+                .king_moves_from(from)
+                .into_iter()
+                .any(|chess_move| chess_move.to == target),
+        }
+    }
+
+    fn pawn_attacks_square(from: Square, color: Color, target: Square) -> bool {
+        let rank_delta = match color {
+            Color::White => 1,
+            Color::Black => -1,
+        };
+
+        let target_rank = from.rank() as i8 + rank_delta;
+        let file_delta = target.file() as i8 - from.file() as i8;
+
+        target.rank() as i8 == target_rank && (file_delta == -1 || file_delta == 1)
+    }
+
+    pub fn piece_moves_from(&self, square: Square) -> Vec<ChessMove> {
+        let Some(piece) = self.piece_at(square) else {
+            return Vec::new();
+        };
+
+        match piece.kind {
+            PieceKind::Pawn => self.pawn_moves_from(square),
+            PieceKind::Knight => self.knight_moves_from(square),
+            PieceKind::Bishop => self.bishop_moves_from(square),
+            PieceKind::Rook => self.rook_moves_from(square),
+            PieceKind::Queen => self.queen_moves_from(square),
+            PieceKind::King => self.king_moves_from(square),
+        }
+    }
+
     pub fn pawn_moves_from(&self, square: Square) -> Vec<ChessMove> {
         let Some(piece) = self.piece_at(square) else {
             return Vec::new();

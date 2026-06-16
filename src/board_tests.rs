@@ -195,6 +195,201 @@ fn fen_piece_placement_rejects_unknown_piece_letter() {
 }
 
 #[test]
+fn empty_square_has_no_piece_moves() {
+    let board = Board::empty();
+    let e4 = Square::new(4, 3).unwrap();
+
+    assert!(board.piece_moves_from(e4).is_empty());
+}
+
+#[test]
+fn piece_moves_from_dispatches_to_pawn_moves() {
+    let mut board = Board::empty();
+    let e2 = Square::new(4, 1).unwrap();
+
+    board.set_piece(e2, Piece::new(Color::White, PieceKind::Pawn));
+
+    assert_eq!(board.piece_moves_from(e2), board.pawn_moves_from(e2));
+}
+
+#[test]
+fn piece_moves_from_dispatches_to_knight_moves() {
+    let mut board = Board::empty();
+    let e4 = Square::new(4, 3).unwrap();
+
+    board.set_piece(e4, Piece::new(Color::White, PieceKind::Knight));
+
+    assert_eq!(board.piece_moves_from(e4), board.knight_moves_from(e4));
+}
+
+#[test]
+fn piece_moves_from_dispatches_to_bishop_moves() {
+    let mut board = Board::empty();
+    let e4 = Square::new(4, 3).unwrap();
+
+    board.set_piece(e4, Piece::new(Color::White, PieceKind::Bishop));
+
+    assert_eq!(board.piece_moves_from(e4), board.bishop_moves_from(e4));
+}
+
+#[test]
+fn piece_moves_from_dispatches_to_rook_moves() {
+    let mut board = Board::empty();
+    let e4 = Square::new(4, 3).unwrap();
+
+    board.set_piece(e4, Piece::new(Color::White, PieceKind::Rook));
+
+    assert_eq!(board.piece_moves_from(e4), board.rook_moves_from(e4));
+}
+
+#[test]
+fn piece_moves_from_dispatches_to_queen_moves() {
+    let mut board = Board::empty();
+    let e4 = Square::new(4, 3).unwrap();
+
+    board.set_piece(e4, Piece::new(Color::White, PieceKind::Queen));
+
+    assert_eq!(board.piece_moves_from(e4), board.queen_moves_from(e4));
+}
+
+#[test]
+fn piece_moves_from_dispatches_to_king_moves() {
+    let mut board = Board::empty();
+    let e4 = Square::new(4, 3).unwrap();
+
+    board.set_piece(e4, Piece::new(Color::White, PieceKind::King));
+
+    assert_eq!(board.piece_moves_from(e4), board.king_moves_from(e4));
+}
+
+#[test]
+fn empty_board_has_no_pseudo_legal_moves_for_white() {
+    let board = Board::empty();
+
+    assert!(board.pseudo_legal_moves_for(Color::White).is_empty());
+}
+
+#[test]
+fn pseudo_legal_moves_for_white_ignores_black_pieces() {
+    let mut board = Board::empty();
+    let b1 = Square::new(1, 0).unwrap();
+    let g8 = Square::new(6, 7).unwrap();
+
+    board.set_piece(b1, Piece::new(Color::White, PieceKind::Knight));
+    board.set_piece(g8, Piece::new(Color::Black, PieceKind::Knight));
+
+    assert_eq!(
+        board.pseudo_legal_moves_for(Color::White),
+        board.knight_moves_from(b1)
+    );
+}
+
+#[test]
+fn starting_position_has_20_white_pseudo_legal_moves() {
+    let board = Board::starting_position();
+
+    assert_eq!(board.pseudo_legal_moves_for(Color::White).len(), 20);
+}
+
+#[test]
+fn starting_position_has_20_black_pseudo_legal_moves() {
+    let board = Board::starting_position();
+
+    assert_eq!(board.pseudo_legal_moves_for(Color::Black).len(), 20);
+}
+
+#[test]
+fn empty_board_has_no_white_king_square() {
+    let board = Board::empty();
+
+    assert_eq!(board.king_square(Color::White), None);
+}
+
+#[test]
+fn starting_position_white_king_is_on_e1() {
+    let board = Board::starting_position();
+    let e1 = Square::new(4, 0).unwrap();
+
+    assert_eq!(board.king_square(Color::White), Some(e1));
+}
+
+#[test]
+fn starting_position_black_king_is_on_e8() {
+    let board = Board::starting_position();
+    let e8 = Square::new(4, 7).unwrap();
+
+    assert_eq!(board.king_square(Color::Black), Some(e8));
+}
+
+#[test]
+fn king_square_ignores_enemy_king() {
+    let mut board = Board::empty();
+    let e1 = Square::new(4, 0).unwrap();
+
+    board.set_piece(e1, Piece::new(Color::White, PieceKind::King));
+
+    assert_eq!(board.king_square(Color::Black), None);
+}
+
+#[test]
+fn empty_board_has_no_attacked_square() {
+    let board = Board::empty();
+    let e4 = Square::new(4, 3).unwrap();
+
+    assert!(!board.is_square_attacked(e4, Color::White));
+}
+
+#[test]
+fn knight_attacks_target_square() {
+    let mut board = Board::empty();
+    let e4 = Square::new(4, 3).unwrap();
+    let f6 = Square::new(5, 5).unwrap();
+
+    board.set_piece(e4, Piece::new(Color::White, PieceKind::Knight));
+
+    assert!(board.is_square_attacked(f6, Color::White));
+}
+
+#[test]
+fn attack_detection_ignores_wrong_color() {
+    let mut board = Board::empty();
+    let e4 = Square::new(4, 3).unwrap();
+    let f6 = Square::new(5, 5).unwrap();
+
+    board.set_piece(e4, Piece::new(Color::White, PieceKind::Knight));
+
+    assert!(!board.is_square_attacked(f6, Color::Black));
+}
+
+#[test]
+fn white_pawn_attacks_diagonal_squares_but_not_forward() {
+    let mut board = Board::empty();
+    let e4 = Square::new(4, 3).unwrap();
+    let d5 = Square::new(3, 4).unwrap();
+    let e5 = Square::new(4, 4).unwrap();
+    let f5 = Square::new(5, 4).unwrap();
+
+    board.set_piece(e4, Piece::new(Color::White, PieceKind::Pawn));
+
+    assert!(board.is_square_attacked(d5, Color::White));
+    assert!(!board.is_square_attacked(e5, Color::White));
+    assert!(board.is_square_attacked(f5, Color::White));
+}
+
+#[test]
+fn black_pawn_attacks_diagonal_squares_down_the_board() {
+    let mut board = Board::empty();
+    let e5 = Square::new(4, 4).unwrap();
+    let d4 = Square::new(3, 3).unwrap();
+    let f4 = Square::new(5, 3).unwrap();
+
+    board.set_piece(e5, Piece::new(Color::Black, PieceKind::Pawn));
+
+    assert!(board.is_square_attacked(d4, Color::Black));
+    assert!(board.is_square_attacked(f4, Color::Black));
+}
+
+#[test]
 fn white_pawn_on_e2_can_move_to_e3() {
     let mut board = Board::empty();
     let e2 = Square::new(4, 1).unwrap();
