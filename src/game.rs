@@ -100,7 +100,7 @@ mod tests {
 
         let e2 = Square::new(4, 1).unwrap();
         let e4 = Square::new(4, 3).unwrap();
-        let chess_move = ChessMove { from: e2, to: e4 };
+        let chess_move = ChessMove::new(e2, e4);
 
         game.make_move(chess_move);
 
@@ -120,7 +120,7 @@ mod tests {
 
         let e2 = Square::new(4, 1).unwrap();
         let e4 = Square::new(4, 3).unwrap();
-        let chess_move = ChessMove { from: e2, to: e4 };
+        let chess_move = ChessMove::new(e2, e4);
 
         game.make_move(chess_move);
 
@@ -133,7 +133,7 @@ mod tests {
 
         let e2 = Square::new(4, 1).unwrap();
         let e4 = Square::new(4, 3).unwrap();
-        let chess_move = ChessMove { from: e2, to: e4 };
+        let chess_move = ChessMove::new(e2, e4);
         let expected_record = MoveRecord::new(chess_move, None, Color::White);
 
         game.make_move(chess_move);
@@ -153,7 +153,7 @@ mod tests {
 
         let e2 = Square::new(4, 1).unwrap();
         let e4 = Square::new(4, 3).unwrap();
-        let chess_move = ChessMove { from: e2, to: e4 };
+        let chess_move = ChessMove::new(e2, e4);
         let expected_record = MoveRecord::new(chess_move, None, Color::White);
 
         game.make_move(chess_move);
