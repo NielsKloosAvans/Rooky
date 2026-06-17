@@ -1,4 +1,4 @@
-use crate::{Board, ChessMove, Color, FenError, MoveRecord, Piece};
+use crate::{Board, ChessMove, Color, FenError, MoveError, MoveRecord, Piece};
 
 pub struct Game {
     pub board: Board,
@@ -46,6 +46,18 @@ impl Game {
         self.side_to_move = self.side_to_move.opposite();
         captured_piece
     }
+
+    pub fn try_make_move(&mut self, chess_move: ChessMove) -> Result<Option<Piece>, MoveError> {
+        let legal_moves = self.board.legal_moves_for(self.side_to_move);
+
+        if !legal_moves.contains(&chess_move) {
+            return Err(MoveError::IllegalMove);
+        }
+
+        let captured_piece = self.make_move(chess_move);
+
+        Ok(captured_piece)
+    }
     pub fn move_history(&self) -> &[MoveRecord] {
         &self.move_history
     }
@@ -62,7 +74,7 @@ impl Default for Game {
 
 #[cfg(test)]
 mod tests {
-    use crate::{ChessMove, FenError, Square};
+    use crate::{ChessMove, FenError, MoveError, PieceKind, Square};
 
     use super::*;
 
@@ -147,6 +159,74 @@ mod tests {
         game.make_move(chess_move);
 
         assert_eq!(game.last_move(), Some(&expected_record));
+    }
+
+    #[test]
+    fn try_make_move_accepts_legal_move() {
+        let mut game = Game::new();
+        let e2 = Square::new(4, 1).unwrap();
+        let e4 = Square::new(4, 3).unwrap();
+        let chess_move = ChessMove::new(e2, e4);
+
+        let result = game.try_make_move(chess_move);
+
+        assert!(matches!(result, Ok(None)));
+        assert_eq!(game.board.piece_at(e2), None);
+        assert_eq!(
+            game.board.piece_at(e4),
+            Some(Piece::new(Color::White, PieceKind::Pawn))
+        );
+        assert_eq!(game.side_to_move, Color::Black);
+        assert_eq!(game.move_history().len(), 1);
+    }
+
+    #[test]
+    fn try_make_move_rejects_illegal_move() {
+        let mut game = Game::new();
+        let e3 = Square::new(4, 2).unwrap();
+        let e4 = Square::new(4, 3).unwrap();
+        let chess_move = ChessMove::new(e3, e4);
+
+        let result = game.try_make_move(chess_move);
+
+        assert!(matches!(result, Err(MoveError::IllegalMove)));
+    }
+
+    #[test]
+    fn try_make_move_rejected_move_does_not_change_board() {
+        let mut game = Game::new();
+        let board_before = game.board;
+        let e3 = Square::new(4, 2).unwrap();
+        let e4 = Square::new(4, 3).unwrap();
+        let chess_move = ChessMove::new(e3, e4);
+
+        let _ = game.try_make_move(chess_move);
+
+        assert_eq!(game.board, board_before);
+    }
+
+    #[test]
+    fn try_make_move_rejected_move_does_not_switch_side_to_move() {
+        let mut game = Game::new();
+        let e3 = Square::new(4, 2).unwrap();
+        let e4 = Square::new(4, 3).unwrap();
+        let chess_move = ChessMove::new(e3, e4);
+
+        let _ = game.try_make_move(chess_move);
+
+        assert_eq!(game.side_to_move, Color::White);
+    }
+
+    #[test]
+    fn try_make_move_rejected_move_does_not_add_to_move_history() {
+        let mut game = Game::new();
+        let e3 = Square::new(4, 2).unwrap();
+        let e4 = Square::new(4, 3).unwrap();
+        let chess_move = ChessMove::new(e3, e4);
+
+        let _ = game.try_make_move(chess_move);
+
+        assert!(game.move_history().is_empty());
     }
 
     #[test]

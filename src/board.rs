@@ -80,6 +80,14 @@ impl Board {
         self.is_square_attacked(king_square, color.opposite())
     }
 
+    pub fn is_checkmate(&self, color: Color) -> bool {
+        self.is_in_check(color) && self.legal_moves_for(color).is_empty()
+    }
+
+    pub fn is_stalemate(&self, color: Color) -> bool {
+        !self.is_in_check(color) && self.legal_moves_for(color).is_empty()
+    }
+
     pub fn pseudo_legal_moves_for(&self, color: Color) -> Vec<ChessMove> {
         let mut moves = Vec::new();
 
@@ -100,6 +108,21 @@ impl Board {
         }
 
         moves
+    }
+
+    pub fn legal_moves_for(&self, color: Color) -> Vec<ChessMove> {
+        let mut legal_moves = Vec::new();
+
+        for chess_move in self.pseudo_legal_moves_for(color) {
+            let mut board_after_move = *self;
+
+            board_after_move.make_move(chess_move);
+
+            if !board_after_move.is_in_check(color) {
+                legal_moves.push(chess_move);
+            }
+        }
+        legal_moves
     }
 
     pub fn king_square(&self, color: Color) -> Option<Square> {

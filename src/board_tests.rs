@@ -457,6 +457,172 @@ fn black_king_is_in_check_from_white_pawn() {
 }
 
 #[test]
+fn starting_position_has_20_white_legal_moves() {
+    let board = Board::starting_position();
+
+    assert_eq!(board.legal_moves_for(Color::White).len(), 20);
+}
+
+#[test]
+fn legal_moves_do_not_allow_king_to_move_into_check() {
+    let mut board = Board::empty();
+    let e1 = Square::new(4, 0).unwrap();
+    let e2 = Square::new(4, 1).unwrap();
+    let e8 = Square::new(4, 7).unwrap();
+
+    board.set_piece(e1, Piece::new(Color::White, PieceKind::King));
+    board.set_piece(e8, Piece::new(Color::Black, PieceKind::Rook));
+
+    assert!(
+        !board
+            .legal_moves_for(Color::White)
+            .contains(&ChessMove::new(e1, e2))
+    );
+}
+
+#[test]
+fn legal_moves_do_not_allow_pinned_piece_to_expose_king() {
+    let mut board = Board::empty();
+    let e1 = Square::new(4, 0).unwrap();
+    let e2 = Square::new(4, 1).unwrap();
+    let d2 = Square::new(3, 1).unwrap();
+    let e8 = Square::new(4, 7).unwrap();
+
+    board.set_piece(e1, Piece::new(Color::White, PieceKind::King));
+    board.set_piece(e2, Piece::new(Color::White, PieceKind::Rook));
+    board.set_piece(e8, Piece::new(Color::Black, PieceKind::Rook));
+
+    assert!(
+        !board
+            .legal_moves_for(Color::White)
+            .contains(&ChessMove::new(e2, d2))
+    );
+}
+
+#[test]
+fn legal_moves_allow_pinned_piece_to_move_along_pin_line() {
+    let mut board = Board::empty();
+    let e1 = Square::new(4, 0).unwrap();
+    let e2 = Square::new(4, 1).unwrap();
+    let e3 = Square::new(4, 2).unwrap();
+    let e8 = Square::new(4, 7).unwrap();
+
+    board.set_piece(e1, Piece::new(Color::White, PieceKind::King));
+    board.set_piece(e2, Piece::new(Color::White, PieceKind::Rook));
+    board.set_piece(e8, Piece::new(Color::Black, PieceKind::Rook));
+
+    assert!(
+        board
+            .legal_moves_for(Color::White)
+            .contains(&ChessMove::new(e2, e3))
+    );
+}
+
+#[test]
+fn legal_moves_allow_king_to_capture_attacker_when_destination_is_safe() {
+    let mut board = Board::empty();
+    let e1 = Square::new(4, 0).unwrap();
+    let e2 = Square::new(4, 1).unwrap();
+
+    board.set_piece(e1, Piece::new(Color::White, PieceKind::King));
+    board.set_piece(e2, Piece::new(Color::Black, PieceKind::Rook));
+
+    assert!(
+        board
+            .legal_moves_for(Color::White)
+            .contains(&ChessMove::new(e1, e2))
+    );
+}
+
+#[test]
+fn legal_moves_do_not_allow_king_to_capture_protected_attacker() {
+    let mut board = Board::empty();
+    let e1 = Square::new(4, 0).unwrap();
+    let e2 = Square::new(4, 1).unwrap();
+    let b5 = Square::new(1, 4).unwrap();
+
+    board.set_piece(e1, Piece::new(Color::White, PieceKind::King));
+    board.set_piece(e2, Piece::new(Color::Black, PieceKind::Rook));
+    board.set_piece(b5, Piece::new(Color::Black, PieceKind::Bishop));
+
+    assert!(
+        !board
+            .legal_moves_for(Color::White)
+            .contains(&ChessMove::new(e1, e2))
+    );
+}
+
+#[test]
+fn white_is_checkmated_when_in_check_with_no_legal_moves() {
+    let mut board = Board::empty();
+    let h1 = Square::new(7, 0).unwrap();
+    let g2 = Square::new(6, 1).unwrap();
+    let f3 = Square::new(5, 2).unwrap();
+
+    board.set_piece(h1, Piece::new(Color::White, PieceKind::King));
+    board.set_piece(g2, Piece::new(Color::Black, PieceKind::Queen));
+    board.set_piece(f3, Piece::new(Color::Black, PieceKind::King));
+
+    assert!(board.is_checkmate(Color::White));
+}
+
+#[test]
+fn white_is_not_checkmated_when_it_can_capture_attacker() {
+    let mut board = Board::empty();
+    let h1 = Square::new(7, 0).unwrap();
+    let g2 = Square::new(6, 1).unwrap();
+    let a8 = Square::new(0, 7).unwrap();
+
+    board.set_piece(h1, Piece::new(Color::White, PieceKind::King));
+    board.set_piece(g2, Piece::new(Color::Black, PieceKind::Queen));
+    board.set_piece(a8, Piece::new(Color::Black, PieceKind::King));
+
+    assert!(!board.is_checkmate(Color::White));
+}
+
+#[test]
+fn starting_position_is_not_checkmate() {
+    let board = Board::starting_position();
+
+    assert!(!board.is_checkmate(Color::White));
+}
+
+#[test]
+fn white_is_stalemated_when_not_in_check_and_has_no_legal_moves() {
+    let mut board = Board::empty();
+    let h1 = Square::new(7, 0).unwrap();
+    let f2 = Square::new(5, 1).unwrap();
+    let g3 = Square::new(6, 2).unwrap();
+
+    board.set_piece(h1, Piece::new(Color::White, PieceKind::King));
+    board.set_piece(f2, Piece::new(Color::Black, PieceKind::Queen));
+    board.set_piece(g3, Piece::new(Color::Black, PieceKind::King));
+
+    assert!(board.is_stalemate(Color::White));
+}
+
+#[test]
+fn white_is_not_stalemated_when_in_check() {
+    let mut board = Board::empty();
+    let h1 = Square::new(7, 0).unwrap();
+    let g2 = Square::new(6, 1).unwrap();
+    let f3 = Square::new(5, 2).unwrap();
+
+    board.set_piece(h1, Piece::new(Color::White, PieceKind::King));
+    board.set_piece(g2, Piece::new(Color::Black, PieceKind::Queen));
+    board.set_piece(f3, Piece::new(Color::Black, PieceKind::King));
+
+    assert!(!board.is_stalemate(Color::White));
+}
+
+#[test]
+fn starting_position_is_not_stalemate() {
+    let board = Board::starting_position();
+
+    assert!(!board.is_stalemate(Color::White));
+}
+
+#[test]
 fn white_pawn_on_e2_can_move_to_e3() {
     let mut board = Board::empty();
     let e2 = Square::new(4, 1).unwrap();
