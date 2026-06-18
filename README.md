@@ -13,7 +13,8 @@ Rooky can currently:
 - Represent a chess board with 64 indexed squares.
 - Store pieces with a color and piece kind.
 - Build the normal starting position.
-- Parse the board and side-to-move parts of FEN into a `Game`.
+- Parse the board, side-to-move, and castling-rights fields of FEN into a
+  `Game`.
 - Move pieces on the board and record captured pieces.
 - Track side to move and move history.
 - Generate pseudo-legal moves for:
@@ -24,13 +25,18 @@ Rooky can currently:
   - Queens
   - Kings
 - Generate pseudo-legal moves for a whole side.
+- Generate legal moves that do not leave the moving side in check.
 - Detect attacked squares.
 - Find a side's king square.
 - Detect whether a side is in check.
+- Detect checkmate and stalemate.
+- Generate and execute pawn promotions, including capture promotions.
+- Store and validate castling rights from FEN.
 
-The move generator does not yet filter legal moves. That means checkmate,
-stalemate, pins, castling, en passant, promotion, and full legal move generation
-are still future work.
+Castling moves and en passant are not implemented yet. Castling rights are
+stored in the game state, but they are not yet updated when a king or rook moves
+and are not yet used during move generation. Position evaluation, search, UCI,
+and the remaining FEN fields are also future work.
 
 ## Board Coordinates
 
@@ -79,10 +85,10 @@ cargo clippy --all-targets --all-features
 src/
   board.rs        Board storage, FEN board parsing, attacks, check, and moves
   board_tests.rs  Board tests kept separate from board implementation
-  chess_move.rs   Move type with from/to squares
+  chess_move.rs   Move type with from/to squares and optional promotion
   color.rs        White/black color type
   fen_error.rs    FEN parsing errors
-  game.rs         Game state, side to move, and move history
+  game.rs         Game state, FEN parsing, castling rights, and move history
   move_record.rs  Stored move history entries
   piece.rs        Piece and piece kind types
   square.rs       File/rank square coordinates and square indexes
@@ -92,15 +98,15 @@ src/
 
 Good next steps:
 
-1. Add legal move filtering so moves that leave your own king in check are removed.
-2. Add checkmate and stalemate detection.
-3. Add special pawn rules: promotion and en passant.
-4. Add castling.
-5. Parse full FEN fields: castling rights, en passant square, halfmove clock,
-   and fullmove number.
-6. Add a simple position evaluation.
-7. Add search with minimax and alpha-beta pruning.
-8. Connect the engine to a UCI loop so it can run in chess GUIs.
+1. Update castling rights when a king or rook moves or an original rook is
+   captured.
+2. Generate and execute legal castling moves.
+3. Add en passant state, move generation, and execution.
+4. Parse the remaining FEN fields: en passant square, halfmove clock, and
+   fullmove number.
+5. Add a simple position evaluation.
+6. Add search with minimax and alpha-beta pruning.
+7. Connect the engine to a UCI loop so it can run in chess GUIs.
 
 ## Development Style
 
