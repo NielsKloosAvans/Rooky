@@ -237,10 +237,15 @@ impl Board {
 
         let mut moves = Vec::new();
 
+        let promotion_rank = match piece.color {
+            Color::White => 7,
+            Color::Black => 0,
+        };
+
         if let Some(to) = Square::new(square.file(), next_rank)
             && self.is_empty(to)
         {
-            moves.push(ChessMove::new(square, to));
+            Self::push_pawn_moves(&mut moves, square, to, promotion_rank == next_rank);
 
             let starting_rank = match piece.color {
                 Color::White => 1,
@@ -268,11 +273,25 @@ impl Board {
                 && let Some(target_piece) = self.piece_at(capture_to)
                 && target_piece.color != piece.color
             {
-                moves.push(ChessMove::new(square, capture_to));
+                Self::push_pawn_moves(&mut moves, square, capture_to, next_rank == promotion_rank);
             }
         }
-
         moves
+    }
+
+    fn push_pawn_moves(moves: &mut Vec<ChessMove>, from: Square, to: Square, is_promotion: bool) {
+        if is_promotion {
+            for kind in [
+                PieceKind::Queen,
+                PieceKind::Rook,
+                PieceKind::Bishop,
+                PieceKind::Knight,
+            ] {
+                moves.push(ChessMove::new_promotion(from, to, Some(kind)));
+            }
+        } else {
+            moves.push(ChessMove::new(from, to));
+        }
     }
 
     pub fn knight_moves_from(&self, square: Square) -> Vec<ChessMove> {
@@ -479,7 +498,11 @@ impl Board {
     pub fn make_move(&mut self, chess_move: ChessMove) -> Option<Piece> {
         if let Some(piece) = self.remove_piece(chess_move.from) {
             let captured_piece = self.piece_at(chess_move.to);
-            self.set_piece(chess_move.to, piece);
+            let piece_to_place = match chess_move.promotion {
+                Some(kind) => Piece::new(piece.color, kind),
+                None => piece,
+            };
+            self.set_piece(chess_move.to, piece_to_place);
             captured_piece
         } else {
             None

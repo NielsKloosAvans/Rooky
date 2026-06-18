@@ -811,6 +811,50 @@ fn black_pawn_on_e2_can_promote_to_queen_rook_bishop_or_knight() {
 }
 
 #[test]
+fn white_pawn_can_capture_on_d8_and_promote() {
+    let mut board = Board::empty();
+    let e7 = Square::new(4, 6).unwrap();
+    let d8 = Square::new(3, 7).unwrap();
+    let e8 = Square::new(4, 7).unwrap();
+
+    board.set_piece(e7, Piece::new(Color::White, PieceKind::Pawn));
+    board.set_piece(d8, Piece::new(Color::Black, PieceKind::Rook));
+    board.set_piece(e8, Piece::new(Color::White, PieceKind::Rook));
+
+    assert_eq!(
+        board.pawn_moves_from(e7),
+        vec![
+            ChessMove::new_promotion(e7, d8, Some(PieceKind::Queen)),
+            ChessMove::new_promotion(e7, d8, Some(PieceKind::Rook)),
+            ChessMove::new_promotion(e7, d8, Some(PieceKind::Bishop)),
+            ChessMove::new_promotion(e7, d8, Some(PieceKind::Knight)),
+        ]
+    );
+}
+
+#[test]
+fn black_pawn_can_capture_on_f1_and_promote() {
+    let mut board = Board::empty();
+    let e2 = Square::new(4, 1).unwrap();
+    let e1 = Square::new(4, 0).unwrap();
+    let f1 = Square::new(5, 0).unwrap();
+
+    board.set_piece(e2, Piece::new(Color::Black, PieceKind::Pawn));
+    board.set_piece(e1, Piece::new(Color::Black, PieceKind::Rook));
+    board.set_piece(f1, Piece::new(Color::White, PieceKind::Rook));
+
+    assert_eq!(
+        board.pawn_moves_from(e2),
+        vec![
+            ChessMove::new_promotion(e2, f1, Some(PieceKind::Queen)),
+            ChessMove::new_promotion(e2, f1, Some(PieceKind::Rook)),
+            ChessMove::new_promotion(e2, f1, Some(PieceKind::Bishop)),
+            ChessMove::new_promotion(e2, f1, Some(PieceKind::Knight)),
+        ]
+    );
+}
+
+#[test]
 fn pawn_promotion_does_not_allow_king_or_pawn() {
     let mut board = Board::empty();
     let e7 = Square::new(4, 6).unwrap();
