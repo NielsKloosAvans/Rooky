@@ -4,6 +4,14 @@ pub struct Game {
     pub board: Board,
     pub side_to_move: Color,
     move_history: Vec<MoveRecord>,
+    castling_rights: CastlingRights,
+}
+
+pub struct CastlingRights {
+    white_kingside: bool,
+    white_queenside: bool,
+    black_kingside: bool,
+    black_queenside: bool,
 }
 
 impl Game {
@@ -12,6 +20,12 @@ impl Game {
             board: Board::starting_position(),
             side_to_move: Color::White,
             move_history: Vec::new(),
+            castling_rights: CastlingRights {
+                white_kingside: true,
+                white_queenside: true,
+                black_kingside: true,
+                black_queenside: true,
+            },
         }
     }
 
@@ -26,6 +40,30 @@ impl Game {
             _ => return Err(FenError::InvalidSideToMove),
         };
 
+        let castling_rights_text = parts.next().ok_or(FenError::MissingCastlingRights)?;
+        let mut white_kingside = false;
+        let mut white_queenside = false;
+        let mut black_kingside = false;
+        let mut black_queenside = false;
+
+        if castling_rights_text != "-" {
+            for character in castling_rights_text.chars() {
+                let right = match character {
+                    'K' => &mut white_kingside,
+                    'Q' => &mut white_queenside,
+                    'k' => &mut black_kingside,
+                    'q' => &mut black_queenside,
+                    _ => return Err(FenError::InvalidCastlingRights),
+                };
+
+                if *right {
+                    return Err(FenError::InvalidCastlingRights);
+                }
+
+                *right = true;
+            }
+        }
+
         if parts.next().is_some() {
             return Err(FenError::TooManyFields);
         }
@@ -34,6 +72,12 @@ impl Game {
             board,
             side_to_move,
             move_history: Vec::new(),
+            castling_rights: CastlingRights {
+                white_kingside,
+                white_queenside,
+                black_kingside,
+                black_queenside,
+            },
         })
     }
 
@@ -92,6 +136,16 @@ mod tests {
         let game = Game::new();
 
         assert_eq!(game.board, Board::starting_position())
+    }
+
+    #[test]
+    fn new_game_has_all_castling_rights() {
+        let game = Game::new();
+
+        assert!(game.castling_rights.white_kingside);
+        assert!(game.castling_rights.white_queenside);
+        assert!(game.castling_rights.black_kingside);
+        assert!(game.castling_rights.black_queenside);
     }
 
     #[test]
@@ -231,30 +285,50 @@ mod tests {
 
     #[test]
     fn game_from_fen_sets_board() {
-        let game = Game::from_fen(&format!("{STARTING_FEN_BOARD} w")).unwrap();
+        let game = Game::from_fen(&format!("{STARTING_FEN_BOARD} w -")).unwrap();
 
         assert_eq!(game.board, Board::starting_position());
     }
 
     #[test]
     fn game_from_fen_sets_white_to_move() {
-        let game = Game::from_fen("8/8/8/8/8/8/8/8 w").unwrap();
+        let game = Game::from_fen("8/8/8/8/8/8/8/8 w -").unwrap();
 
         assert_eq!(game.side_to_move, Color::White);
     }
 
     #[test]
     fn game_from_fen_sets_black_to_move() {
-        let game = Game::from_fen("8/8/8/8/8/8/8/8 b").unwrap();
+        let game = Game::from_fen("8/8/8/8/8/8/8/8 b -").unwrap();
 
         assert_eq!(game.side_to_move, Color::Black);
     }
 
     #[test]
     fn game_from_fen_starts_with_empty_move_history() {
-        let game = Game::from_fen("8/8/8/8/8/8/8/8 w").unwrap();
+        let game = Game::from_fen("8/8/8/8/8/8/8/8 w -").unwrap();
 
         assert!(game.move_history().is_empty());
+    }
+
+    #[test]
+    fn game_from_fen_sets_all_castling_rights() {
+        let game = Game::from_fen("8/8/8/8/8/8/8/8 w KQkq").unwrap();
+
+        assert!(game.castling_rights.white_kingside);
+        assert!(game.castling_rights.white_queenside);
+        assert!(game.castling_rights.black_kingside);
+        assert!(game.castling_rights.black_queenside);
+    }
+
+    #[test]
+    fn game_from_fen_dash_disables_all_castling_rights() {
+        let game = Game::from_fen("8/8/8/8/8/8/8/8 w -").unwrap();
+
+        assert!(!game.castling_rights.white_kingside);
+        assert!(!game.castling_rights.white_queenside);
+        assert!(!game.castling_rights.black_kingside);
+        assert!(!game.castling_rights.black_queenside);
     }
 
     #[test]
@@ -286,8 +360,29 @@ mod tests {
     }
 
     #[test]
+    fn game_from_fen_rejects_missing_castling_rights() {
+        let game = Game::from_fen("8/8/8/8/8/8/8/8 w");
+
+        assert!(matches!(game, Err(FenError::MissingCastlingRights)));
+    }
+
+    #[test]
+    fn game_from_fen_rejects_invalid_castling_rights() {
+        let game = Game::from_fen("8/8/8/8/8/8/8/8 w X");
+
+        assert!(matches!(game, Err(FenError::InvalidCastlingRights)));
+    }
+
+    #[test]
+    fn game_from_fen_rejects_duplicate_castling_rights() {
+        let game = Game::from_fen("8/8/8/8/8/8/8/8 w KK");
+
+        assert!(matches!(game, Err(FenError::InvalidCastlingRights)));
+    }
+
+    #[test]
     fn game_from_fen_rejects_too_many_fields() {
-        let game = Game::from_fen("8/8/8/8/8/8/8/8 w extra");
+        let game = Game::from_fen("8/8/8/8/8/8/8/8 w - extra");
 
         assert!(matches!(game, Err(FenError::TooManyFields)));
     }

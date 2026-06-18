@@ -7,4 +7,6 @@ pub enum FenError {
     TooManyFields,
     MissingBoard,
     MissingSideToMove,
+    MissingCastlingRights,
+    InvalidCastlingRights,
 }
